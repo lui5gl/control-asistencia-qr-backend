@@ -1,0 +1,35 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Backend API with Node.js, Express, Prisma and TypeScript",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "tsx src/database/seeds/index.ts",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "5.2.1",
+    "@prisma/client": "7.4.0",
+    "@prisma/adapter-pg": "7.4.0",
+    "pg": "8.18.0",
+    "dotenv": "17.3.1",
+    "cors": "2.8.6"
+  },
+  "devDependencies": {
+    "@types/node": "25.2.3",
+    "@types/express": "5.0.6",
+    "@types/cors": "2.8.19",
+    "@types/pg": "8.16.0",
+    "typescript": "5.9.3",
+    "tsx": "4.21.0",
+    "prisma": "7.4.0"
+  }
+}

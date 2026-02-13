@@ -3,3 +3,20 @@
 
 # Docker volumes
 postgres_data/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Logs
+logs/
+*.log
+
+# TypeScript
+dist/
+*.tsbuildinfo
+
+# Prisma
+prisma/migrations/*/migration.sql
