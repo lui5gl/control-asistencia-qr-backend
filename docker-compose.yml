@@ -14,10 +14,42 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    container_name: ${BACKEND_CONTAINER_NAME:-backend}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: backend-app:latest
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+    volumes:
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - /app/node_modules
+    networks:
+      - app_network
+    depends_on:
+      db:
+        condition: service_healthy
+    command: npm run dev
 
 volumes:
   postgres_data:
-
 
 networks:
   app_network:
