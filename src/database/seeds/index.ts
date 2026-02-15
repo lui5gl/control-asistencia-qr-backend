@@ -1,9 +1,13 @@
 import prisma from '../../config/prisma';
+import bcrypt from 'bcryptjs';
 
 async function main() {
   console.log('Seeding database...');
 
   await prisma.user.deleteMany();
+
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const testPassword = await bcrypt.hash('test123', 10);
 
   const users = await prisma.user.createMany({
     data: [
@@ -11,13 +15,13 @@ async function main() {
         username: 'admin', 
         email: 'admin@example.com', 
         name: 'Admin User',
-        password: 'hashed_password_admin'
+        password: adminPassword
       },
       { 
         username: 'test', 
         email: 'test@example.com', 
         name: 'Test User',
-        password: 'hashed_password_test'
+        password: testPassword
       }
     ]
   });
