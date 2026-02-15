@@ -1,9 +1,7 @@
-import { defineConfig } from '@prisma/client/adapter';
-
-export default defineConfig({
+export default {
   datasources: {
     db: {
-      url: process.env.DATABASE_URL!,
+      url: process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/mydb?schema=public',
     },
   },
-});
+};
