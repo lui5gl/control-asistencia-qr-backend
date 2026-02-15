@@ -1,120 +1,262 @@
-# Backend API - Node.js + Express + Prisma + PostgreSQL + TypeScript
+# Backend API
 
-Modern REST API built with Node.js, Express, Prisma ORM, PostgreSQL and TypeScript.
+API REST desarrollada con Node.js, Express, Prisma ORM, PostgreSQL y TypeScript.
 
-## Stack
+## Requisitos Previos
 
-- **Node.js** 24.13.1 (Alpine)
-- **TypeScript** 5.x
-- **Express** 4.x
-- **Prisma** 5.x
-- **PostgreSQL** 18.2
-- **Docker** + Docker Compose
+- Docker Engine 24.x o superior
+- Docker Compose v2.x o superior
+- Node.js 20.x o superior (solo para desarrollo local sin Docker)
 
-## Quick Start
+## Stack Tecnológico
+
+| Tecnología | Versión | Descripción |
+|------------|---------|-------------|
+| Node.js | 24.13.1 (Alpine) | Runtime de JavaScript |
+| TypeScript | 5.9.3 | Superset tipado de JavaScript |
+| Express | 5.2.1 | Framework web para Node.js |
+| Prisma | 7.4.0 | ORM para PostgreSQL |
+| PostgreSQL | 18.2 | Base de datos relacional |
+| Docker | - | Containerización |
+
+## Configuración del Entorno de Desarrollo
+
+### 1. Clonar el Repositorio
 
 ```bash
-# Setup environment
+git clone https://github.com/lui5gl/control-asistencia-qr-backend
+cd backend
+```
+
+### 2. Configurar Variables de Entorno
+
+```bash
 cp .env.example .env
+```
 
-# Start services
+Editar el archivo `.env` con los valores correspondientes:
+
+```env
+# Database Configuration
+POSTGRES_CONTAINER_NAME=postgres
+POSTGRES_VERSION=18.2
+POSTGRES_USER=<tu_usuario>
+POSTGRES_PASSWORD=<tu_password>
+POSTGRES_DB=<tu_database>
+POSTGRES_PORT=5432
+
+# Backend Configuration
+BACKEND_CONTAINER_NAME=backend
+BACKEND_PORT=3000
+NODE_ENV=development
+
+# Prisma Database URL
+DATABASE_URL="postgresql://<tu_usuario>:<tu_password>@db:5432/<tu_database>?schema=public"
+```
+
+### 3. Iniciar los Servicios con Docker
+
+```bash
 docker-compose up -d
+```
 
-# Run migrations
+Este comando iniciará dos contenedores:
+- **db**: Servidor PostgreSQL
+- **backend**: Aplicación Node.js con hot-reload habilitado
+
+### 4. Ejecutar Migraciones de Base de Datos
+
+```bash
 docker exec -it backend npm run prisma:migrate
+```
 
-# Seed database
+### 5. Poblar la Base de Datos (Opcional)
+
+```bash
 docker exec -it backend npm run prisma:seed
 ```
 
-## Project Structure
+## Arquitectura del Proyecto
 
 ```
 backend/
 ├── prisma/
-│   └── schema.prisma
+│   └── schema.prisma        # Esquema de la base de datos
 ├── src/
 │   ├── config/
-│   │   └── prisma.ts
+│   │   └── prisma.ts        # Configuración del cliente Prisma
 │   ├── controllers/
-│   │   └── user.controller.ts
-│   ├── routes/
-│   │   ├── index.ts
-│   │   └── user.routes.ts
+│   │   └── user.controller.ts # Controladores de la API
+│   ├── database/
+│   │   ├── seeds/           # Datos de prueba
+│   │   └── migrations/      # Migraciones generadas
 │   ├── middlewares/
-│   │   └── index.ts
+│   │   └── index.ts         # Middlewares de Express
+│   ├── models/              # Modelos de dominio
+│   ├── routes/
+│   │   ├── index.ts         # Router principal
+│   │   └── user.routes.ts   # Rutas del recurso User
 │   ├── types/
-│   │   └── index.ts
-│   ├── models/
-│   └── database/
-│       ├── seeds/
-│       └── migrations/
-├── dist/                     # Compiled JS
-├── tsconfig.json
-├── docker-compose.yml
-├── Dockerfile
-└── package.json
+│   │   └── index.ts         # Tipos TypeScript y DTOs
+│   └── index.ts             # Punto de entrada
+├── dist/                    # JavaScript compilado
+├── tsconfig.json            # Configuración de TypeScript
+├── docker-compose.yml       # Orquestación de contenedores
+├── Dockerfile               # Imagen del contenedor backend
+└── package.json             # Dependencias y scripts
 ```
 
-## API Endpoints
+## Convenciones de Código
 
-- `GET /` - API info
-- `GET /health` - Health check
-- `GET /api` - API version
-- `GET /api/users` - List users
-- `POST /api/users` - Create user
-- `GET /api/users/:id` - Get user
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
+### Estructura de Directorios
 
-## Commands
+- **controllers/**: Contiene la lógica de negocio de cada endpoint. Los controladores exportan funciones asíncronas que manejan las peticiones HTTP.
+- **routes/**: Define las rutas de la API y mapea los endpoints a sus respectivos controladores.
+- **types/**: Define los tipos TypeScript, interfaces y DTOs para tipado estático.
+- **config/**: Configuraciones de servicios externos (Prisma, etc.).
+- **middlewares/**: Middlewares de Express para autenticación, validación, manejo de errores, etc.
+
+### Patrones Utilizados
+
+- **Controladores**: Funciones exportadas que reciben `Request` y `Response` de Express.
+- **Tipado**: Uso de DTOs para tipar el body y params de las peticiones.
+- **Prisma Client**: Instancia singleton con adaptador PostgreSQL.
+
+### Ejemplo de Controlador
+
+```typescript
+import { Request, Response } from 'express';
+import prisma from '../config/prisma';
+
+export const getAll = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const users = await prisma.user.findMany();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Error message' });
+  }
+};
+```
+
+### Ejemplo de Ruta
+
+```typescript
+import { Router } from 'express';
+import * as controller from '../controllers/resource.controller';
+
+const router = Router();
+
+router.get('/', controller.getAll);
+router.get('/:id', controller.getById);
+router.post('/', controller.create);
+router.put('/:id', controller.update);
+router.delete('/:id', controller.delete);
+
+export default router;
+```
+
+## Endpoints de la API
+
+### Endpoints Generales
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/` | Información de la API |
+| GET | `/health` | Estado del servidor |
+| GET | `/api` | Versión de la API |
+
+### Recurso Users
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/users` | Listar todos los usuarios |
+| GET | `/api/users/:id` | Obtener usuario por ID |
+| POST | `/api/users` | Crear nuevo usuario |
+| PUT | `/api/users/:id` | Actualizar usuario |
+| DELETE | `/api/users/:id` | Eliminar usuario |
+
+#### Esquema User
+
+```typescript
+interface User {
+  id: number;
+  email: string;
+  name: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+## Comandos Disponibles
 
 ### Docker
+
 ```bash
-docker-compose up -d          # Start
-docker-compose down           # Stop
-docker-compose logs -f        # Logs
-docker-compose restart        # Restart
-docker-compose build          # Rebuild
+docker-compose up -d        # Iniciar servicios en background
+docker-compose down         # Detener servicios
+docker-compose logs -f      # Ver logs en tiempo real
+docker-compose logs -f backend  # Logs del backend únicamente
+docker-compose restart      # Reiniciar servicios
+docker-compose build        # Reconstruir imágenes
 ```
 
 ### Prisma
+
 ```bash
-npm run prisma:generate       # Generate client
-npm run prisma:migrate        # Run migrations
-npm run prisma:seed          # Seed database
-npm run prisma:studio        # Open GUI
+npm run prisma:generate     # Generar cliente Prisma
+npm run prisma:migrate      # Crear y aplicar migración
+npm run prisma:seed         # Ejecutar seeds
+npm run prisma:studio       # Abrir Prisma Studio (GUI)
 ```
 
-### Development
+### Desarrollo Local
+
 ```bash
-npm run dev                   # Start with tsx watch
-npm run build                 # Compile TypeScript
-npm start                     # Start production
+npm install                 # Instalar dependencias
+npm run dev                 # Servidor con hot-reload (tsx watch)
+npm run build               # Compilar TypeScript a JavaScript
+npm start                   # Ejecutar en producción
 ```
 
-## Environment Variables
+## Flujo de Desarrollo
 
-```env
-DATABASE_URL=postgresql://user:password@host:5432/database
-NODE_ENV=development
-PORT=3000
+1. Crear o modificar el modelo en `prisma/schema.prisma`
+2. Ejecutar migración: `docker exec -it backend npm run prisma:migrate`
+3. Crear tipos en `src/types/index.ts` si es necesario
+4. Implementar controlador en `src/controllers/`
+5. Definir rutas en `src/routes/`
+6. Registrar rutas en `src/routes/index.ts`
+
+## Variables de Entorno
+
+| Variable | Requerido | Descripción |
+|----------|-----------|-------------|
+| `POSTGRES_USER` | Sí | Usuario de PostgreSQL |
+| `POSTGRES_PASSWORD` | Sí | Contraseña de PostgreSQL |
+| `POSTGRES_DB` | Sí | Nombre de la base de datos |
+| `POSTGRES_PORT` | No | Puerto de PostgreSQL (default: 5432) |
+| `BACKEND_PORT` | No | Puerto del servidor (default: 3000) |
+| `NODE_ENV` | No | Ambiente: `development` o `production` |
+| `DATABASE_URL` | Sí | URL de conexión para Prisma |
+
+## Hot Reload
+
+El contenedor backend está configurado con volúmenes que sincronizan los cambios en el código fuente:
+
+```yaml
+volumes:
+  - ./src:/app/src
+  - ./tsconfig.json:/app/tsconfig.json
 ```
 
-See `.env.example` for complete configuration.
+Los cambios en los archivos dentro de `src/` se reflejan automáticamente sin necesidad de reconstruir el contenedor.
 
-## Features
+## Prisma Studio
 
-- TypeScript for type safety
-- RESTful API architecture
-- Prisma ORM with migrations
-- Docker containerization
-- Hot reload in development
-- PostgreSQL database
-- CORS enabled
-- Error handling middleware
-- Database seeding
+Para visualizar y editar la base de datos desde una interfaz gráfica:
 
-## License
+```bash
+docker exec -it backend npm run prisma:studio
+```
 
-MIT
+Prisma Studio estará disponible en `http://localhost:5555`.
