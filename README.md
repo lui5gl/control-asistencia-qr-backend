@@ -81,15 +81,15 @@ docker exec -it backend npm run prisma:seed
 ```
 backend/
 ├── prisma/
-│   └── schema.prisma        # Esquema de la base de datos
+│   ├── schema.prisma        # Esquema de la base de datos
+│   └── migrations/          # Migraciones generadas por Prisma
 ├── src/
 │   ├── config/
 │   │   └── prisma.ts        # Configuración del cliente Prisma
 │   ├── controllers/
 │   │   └── user.controller.ts # Controladores de la API
 │   ├── database/
-│   │   ├── seeds/           # Datos de prueba
-│   │   └── migrations/      # Migraciones generadas
+│   │   └── seeds/           # Datos de prueba
 │   ├── middlewares/
 │   │   └── index.ts         # Middlewares de Express
 │   ├── models/              # Modelos de dominio
