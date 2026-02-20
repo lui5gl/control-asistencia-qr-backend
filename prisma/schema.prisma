@@ -17,6 +17,7 @@ model User {
   deletedAt DateTime?  @map("deleted_at")
   userRoles UserRole[]
   auditLogs AuditLog[]
+  sessions  Session[]
 
   @@map("users")
 }
@@ -86,4 +87,16 @@ model AuditLog {
   user User @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("sessions")
 }
