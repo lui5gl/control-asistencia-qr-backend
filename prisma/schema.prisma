@@ -7,18 +7,16 @@ datasource db {
 }
 
 model User {
-  id          Int          @id @default(autoincrement())
-  username    String       @unique
-  email       String       @unique
-  name        String?
-  password    String
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-  deletedAt   DateTime?    @map("deleted_at")
-  userRoles   UserRole[]
-  auditLogs   AuditLog[]
-  sessions    Session[]
-  enrollments Enrollment[]
+  id        Int        @id @default(autoincrement())
+  username  String     @unique
+  email     String     @unique
+  name      String?
+  password  String
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  deletedAt DateTime?  @map("deleted_at")
+  userRoles UserRole[]
+  auditLogs AuditLog[]
 
   @@map("users")
 }
@@ -88,41 +86,4 @@ model AuditLog {
   user User @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
-}
-
-model Session {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  token     String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at")
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("sessions")
-}
-
-model Course {
-  id          Int          @id @default(autoincrement())
-  title       String
-  description String?
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-  deletedAt   DateTime?    @map("deleted_at")
-  enrollments Enrollment[]
-
-  @@map("courses")
-}
-
-model Enrollment {
-  id         Int      @id @default(autoincrement())
-  userId     Int      @map("user_id")
-  courseId   Int      @map("course_id")
-  enrolledAt DateTime @default(now()) @map("enrolled_at")
-
-  user   User   @relation(fields: [userId], references: [id])
-  course Course @relation(fields: [courseId], references: [id])
-
-  @@unique([userId, courseId])
-  @@map("enrollments")
 }
