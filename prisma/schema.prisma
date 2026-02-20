@@ -16,6 +16,7 @@ model User {
   updatedAt DateTime   @updatedAt @map("updated_at")
   deletedAt DateTime?  @map("deleted_at")
   userRoles UserRole[]
+  auditLogs AuditLog[]
 
   @@map("users")
 }
@@ -73,4 +74,16 @@ model Permission {
   rolePermissions RolePermission[]
 
   @@map("permissions")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  action    String
+  timestamp DateTime @default(now())
+  details   String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
 }
