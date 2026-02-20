@@ -7,18 +7,17 @@ datasource db {
 }
 
 model User {
-  id                  Int                  @id @default(autoincrement())
-  username            String               @unique
-  email               String               @unique
-  name                String?
-  password            String
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
-  deletedAt           DateTime?            @map("deleted_at")
-  userRoles           UserRole[]
-  auditLogs           AuditLog[]
-  sessions            Session[]
-  passwordResetTokens PasswordResetToken[]
+  id        Int        @id @default(autoincrement())
+  username  String     @unique
+  email     String     @unique
+  name      String?
+  password  String
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  deletedAt DateTime?  @map("deleted_at")
+  userRoles UserRole[]
+  auditLogs AuditLog[]
+  sessions  Session[]
 
   @@map("users")
 }
@@ -100,16 +99,4 @@ model Session {
   user User @relation(fields: [userId], references: [id])
 
   @@map("sessions")
-}
-
-model PasswordResetToken {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  token     String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at")
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("password_reset_tokens")
 }
