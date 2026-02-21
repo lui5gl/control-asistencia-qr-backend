@@ -15,6 +15,13 @@ enum UserStatus {
   INACTIVE
 }
 
+enum RoleName {
+  ADMIN
+  MAESTRO
+  ALUMNO
+  EXALUMNO
+}
+
 enum StudentLevel {
   DIAMOND
   GOLD
@@ -101,7 +108,7 @@ model User {
 
 model Role {
   id              Int              @id @default(autoincrement())
-  name            String           @unique
+  name            RoleName         @unique
   description     String?
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
@@ -185,6 +192,7 @@ model Section {
   teacherAssignments TeacherAssignment[]
   enrollments      Enrollment[]
   classSessions    ClassSession[]
+  justifications   AbsenceJustification[]
 
   @@map("sections")
 }
@@ -281,7 +289,7 @@ model AttendanceRecord {
   studentId   Int              @map("student_id")
   status      AttendanceStatus
   recordedAt  DateTime         @default(now()) @map("recorded_at")
-  photoUrl    String?          @map("photo_url")
+  photoUrl    String           @map("photo_url")
   createdAt   DateTime         @default(now()) @map("created_at")
   updatedAt   DateTime         @updatedAt @map("updated_at")
   deletedAt   DateTime?        @map("deleted_at")
@@ -330,6 +338,7 @@ model AbsenceJustification {
   id        Int                        @id @default(autoincrement())
   studentId Int                        @map("student_id")
   sessionId Int?                       @map("session_id")
+  sectionId Int?                       @map("section_id")
   reason    String
   status    AbsenceJustificationStatus @default(PENDING)
   createdAt DateTime                   @default(now()) @map("created_at")
@@ -338,6 +347,7 @@ model AbsenceJustification {
 
   student User          @relation("StudentJustifications", fields: [studentId], references: [id])
   session ClassSession? @relation(fields: [sessionId], references: [id])
+  section Section?      @relation(fields: [sectionId], references: [id])
 
   @@map("absence_justifications")
 }
