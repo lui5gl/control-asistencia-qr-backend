@@ -6,18 +6,95 @@ datasource db {
   provider = "postgresql"
 }
 
+// =====================
+// Enums
+// =====================
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum StudentLevel {
+  DIAMOND
+  GOLD
+  SILVER
+  BRONZE
+}
+
+enum SessionStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum QRStatus {
+  ACTIVE
+  EXPIRED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  LEFT
+  ABSENT
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  WITHDRAWN
+}
+
+enum AbsenceJustificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReportType {
+  BY_COURSE
+  BY_STUDENT
+}
+
+enum NotificationType {
+  CONFIRMATION
+  ABSENCE_ALERT
+  TEACHER_NOTICE
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+// =====================
+// Security / Identity
+// =====================
+
 model User {
   id        Int        @id @default(autoincrement())
   username  String     @unique
   email     String     @unique
   name      String?
   password  String
+  status    UserStatus @default(ACTIVE)
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
   deletedAt DateTime?  @map("deleted_at")
-  userRoles UserRole[]
-  auditLogs AuditLog[]
-  sessions  Session[]
+
+  userRoles        UserRole[]
+  teacherSections  TeacherAssignment[]  @relation("TeacherAssignments")
+  enrollments      Enrollment[]         @relation("StudentEnrollments")
+  taughtSessions   ClassSession[]       @relation("TeacherSessions")
+  attendances      AttendanceRecord[]   @relation("StudentAttendances")
+  studentProfile   StudentProfile?
+  justifications   AbsenceJustification[] @relation("StudentJustifications")
+  generatedReports Report[]             @relation("ReportGeneratedBy")
+  notifications    Notification[]
 
   @@map("users")
 }
@@ -50,6 +127,18 @@ model UserRole {
   @@map("user_roles")
 }
 
+model Permission {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  description     String?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  deletedAt       DateTime?        @map("deleted_at")
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
 model RolePermission {
   id           Int       @id @default(autoincrement())
   roleId       Int       @map("role_id")
@@ -65,38 +154,243 @@ model RolePermission {
   @@map("role_permissions")
 }
 
-model Permission {
-  id              Int              @id @default(autoincrement())
-  name            String           @unique
-  description     String?
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
-  deletedAt       DateTime?        @map("deleted_at")
-  rolePermissions RolePermission[]
+// =====================
+// Academic
+// =====================
 
-  @@map("permissions")
+model Course {
+  id        Int       @id @default(autoincrement())
+  name      String    @map("course_name")
+  code      String    @unique @map("course_code")
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  sections Section[]
+
+  @@map("courses")
 }
+
+model Section {
+  id        Int       @id @default(autoincrement())
+  courseId  Int       @map("course_id")
+  name      String    @map("section_name")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  course           Course              @relation(fields: [courseId], references: [id])
+  schedules        Schedule[]
+  teacherAssignments TeacherAssignment[]
+  enrollments      Enrollment[]
+  classSessions    ClassSession[]
+
+  @@map("sections")
+}
+
+model Schedule {
+  id        Int       @id @default(autoincrement())
+  sectionId Int       @map("section_id")
+  weekday   Weekday
+  startTime DateTime  @map("start_time") @db.Time
+  endTime   DateTime  @map("end_time") @db.Time
+  classroom String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  section Section @relation(fields: [sectionId], references: [id])
+
+  @@map("schedules")
+}
+
+model TeacherAssignment {
+  id        Int       @id @default(autoincrement())
+  sectionId Int       @map("section_id")
+  teacherId Int       @map("teacher_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  section Section @relation(fields: [sectionId], references: [id])
+  teacher User    @relation("TeacherAssignments", fields: [teacherId], references: [id])
+
+  @@unique([sectionId, teacherId])
+  @@map("teacher_assignments")
+}
+
+model Enrollment {
+  id         Int              @id @default(autoincrement())
+  sectionId  Int              @map("section_id")
+  studentId  Int              @map("student_id")
+  status     EnrollmentStatus @default(ENROLLED)
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+  deletedAt  DateTime?        @map("deleted_at")
+
+  section Section @relation(fields: [sectionId], references: [id])
+  student User    @relation("StudentEnrollments", fields: [studentId], references: [id])
+
+  @@unique([sectionId, studentId])
+  @@map("enrollments")
+}
+
+// =====================
+// Attendance & QR
+// =====================
+
+model ClassSession {
+  id        Int           @id @default(autoincrement())
+  sectionId Int           @map("section_id")
+  teacherId Int           @map("teacher_id")
+  date      DateTime      @db.Date
+  startTime DateTime      @map("start_time") @db.Time
+  endTime   DateTime?     @map("end_time") @db.Time
+  status    SessionStatus @default(ACTIVE)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  deletedAt DateTime?     @map("deleted_at")
+
+  section       Section                @relation(fields: [sectionId], references: [id])
+  teacher       User                   @relation("TeacherSessions", fields: [teacherId], references: [id])
+  qrTokens      QRToken[]
+  attendances   AttendanceRecord[]
+  justifications AbsenceJustification[]
+
+  @@map("class_sessions")
+}
+
+model QRToken {
+  id          Int      @id @default(autoincrement())
+  sessionId   Int      @map("session_id")
+  token       String   @unique
+  createdAt   DateTime @default(now()) @map("created_at")
+  expiresAt   DateTime @map("expires_at")
+  status      QRStatus @default(ACTIVE)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  session ClassSession @relation(fields: [sessionId], references: [id])
+
+  @@map("qr_tokens")
+}
+
+model AttendanceRecord {
+  id          Int              @id @default(autoincrement())
+  sessionId   Int              @map("session_id")
+  studentId   Int              @map("student_id")
+  status      AttendanceStatus
+  recordedAt  DateTime         @default(now()) @map("recorded_at")
+  photoUrl    String?          @map("photo_url")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  deletedAt   DateTime?        @map("deleted_at")
+
+  session ClassSession @relation(fields: [sessionId], references: [id])
+  student User         @relation("StudentAttendances", fields: [studentId], references: [id])
+
+  // Anti-fraud: 1 attendance record per student per session
+  @@unique([sessionId, studentId])
+  @@map("attendance_records")
+}
+
+// =====================
+// Profile / Points
+// =====================
+
+model StudentProfile {
+  id          Int          @id @default(autoincrement())
+  studentId   Int          @unique @map("student_id")
+  points      Int          @default(0)
+  level       StudentLevel @default(BRONZE)
+  avatarUrl   String?      @map("avatar_url")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  student       User            @relation(fields: [studentId], references: [id])
+  pointsHistory PointsMovement[]
+
+  @@map("student_profiles")
+}
+
+model PointsMovement {
+  id        Int      @id @default(autoincrement())
+  profileId Int      @map("profile_id")
+  reason    String
+  points    Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  profile StudentProfile @relation(fields: [profileId], references: [id])
+
+  @@map("points_movements")
+}
+
+model AbsenceJustification {
+  id        Int                        @id @default(autoincrement())
+  studentId Int                        @map("student_id")
+  sessionId Int?                       @map("session_id")
+  reason    String
+  status    AbsenceJustificationStatus @default(PENDING)
+  createdAt DateTime                   @default(now()) @map("created_at")
+  updatedAt DateTime                   @updatedAt @map("updated_at")
+  deletedAt DateTime?                  @map("deleted_at")
+
+  student User          @relation("StudentJustifications", fields: [studentId], references: [id])
+  session ClassSession? @relation(fields: [sessionId], references: [id])
+
+  @@map("absence_justifications")
+}
+
+// =====================
+// Reports
+// =====================
+
+model Report {
+  id            Int        @id @default(autoincrement())
+  type          ReportType
+  generatedById Int        @map("generated_by_id")
+  generatedAt   DateTime   @default(now()) @map("generated_at")
+  fileUrl       String?    @map("file_url")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  generatedBy User @relation("ReportGeneratedBy", fields: [generatedById], references: [id])
+
+  @@map("reports")
+}
+
+// =====================
+// Notifications
+// =====================
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int              @map("user_id")
+  type      NotificationType
+  message   String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+// =====================
+// Audit
+// =====================
 
 model AuditLog {
   id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
+  tableName String   @map("table_name")
+  recordId  Int      @map("record_id")
   action    String
-  timestamp DateTime @default(now())
-  details   String?
-
-  user User @relation(fields: [userId], references: [id])
+  oldValues Json?    @map("old_values")
+  newValues Json?    @map("new_values")
+  userId    Int?     @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@map("audit_logs")
-}
-
-model Session {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  token     String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at")
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("sessions")
 }
