@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
+import { setupSwagger } from './config/swagger';
 
 dotenv.config();
 
@@ -25,6 +26,8 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 app.use('/api', routes);
+
+setupSwagger(app);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
