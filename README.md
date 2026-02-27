@@ -155,6 +155,16 @@ router.delete('/:id', controller.delete);
 export default router;
 ```
 
+## Documentación de la API (Swagger)
+
+La API cuenta con documentación interactiva generada con **Swagger** (OpenAPI 3.0). Una vez que el servidor backend esté en ejecución (ya sea mediante Docker o en desarrollo local), puedes visualizar y probar los endpoints desde tu navegador web ingresando a:
+
+- **URL:** [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+
+Desde esta interfaz podrás inspeccionar todos los endpoints disponibles, ver qué parámetros requieren, analizar los esquemas de petición y respuesta, e incluso realizar peticiones de prueba utilizando el botón "Try it out".
+
+---
+
 ## Endpoints de la API
 
 ### Endpoints Generales

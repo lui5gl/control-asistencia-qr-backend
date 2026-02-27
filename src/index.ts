@@ -3,8 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
 import { setupSwagger } from './config/swagger';
+import { validateApiKey } from './middlewares';
 
-dotenv.config();
+dotenv.config({ path: '.env', override: true });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,7 +26,7 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
-app.use('/api', routes);
+app.use('/api', validateApiKey, routes);
 
 setupSwagger(app);
 
