@@ -6,13 +6,13 @@ API REST desarrollada con Node.js, Express, Prisma ORM, PostgreSQL y TypeScript.
 
 - Docker Engine 29.x o superior
 - Docker Compose v5.x o superior
-- Node.js 20.x o superior (solo para desarrollo local sin Docker)
+- Node.js 22.x o superior (solo para desarrollo local sin Docker)
 
 ## Stack Tecnológico
 
 | Tecnología | Versión | Descripción |
 |------------|---------|-------------|
-| Node.js | 24.13.1 (Alpine) | Runtime de JavaScript |
+| Node.js | 22.22.0 | Runtime de JavaScript |
 | TypeScript | 5.9.3 | Superset tipado de JavaScript |
 | Express | 5.2.1 | Framework web para Node.js |
 | Prisma | 7.4.0 | ORM para PostgreSQL |
