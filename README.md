@@ -17,6 +17,8 @@ API REST desarrollada con Node.js, Express, Prisma ORM, PostgreSQL y TypeScript.
 | Express | 5.2.1 | Framework web para Node.js |
 | Prisma | 7.4.0 | ORM para PostgreSQL |
 | PostgreSQL | 18.2 | Base de datos relacional |
+| JWT | jsonwebtoken | Autenticación basada en tokens |
+| Bcrypt | bcryptjs | Hasheo de contraseñas |
 | Docker | - | Containerización |
 
 ## Configuración del Entorno de Desarrollo
@@ -49,12 +51,24 @@ POSTGRES_PORT=5432
 BACKEND_CONTAINER_NAME=backend
 BACKEND_PORT=3000
 NODE_ENV=development
+API_KEY=your_secret_api_key_here
+
+# JWT Configuration
+JWT_SECRET=your_jwt_secret_here
+JWT_EXPIRES_IN=7d
 
 # Prisma Database URL
 DATABASE_URL="postgresql://<tu_usuario>:<tu_password>@db:5432/<tu_database>?schema=public"
 ```
 
-### 3. Iniciar los Servicios con Docker
+### 3. Generar Secretos de Autenticación
+Es necesario generar un secreto seguro para firmar los tokens JWT:
+
+```bash
+docker exec -it backend npm run generate:secret
+```
+
+### 4. Iniciar los Servicios con Docker
 
 ```bash
 docker-compose up -d
@@ -75,6 +89,25 @@ docker exec -it backend npm run prisma:migrate
 ```bash
 docker exec -it backend npm run prisma:seed
 ```
+
+## Autenticación y Seguridad
+
+La API utiliza una combinación de mecanismos de seguridad:
+
+1. **API Key**: Todas las rutas bajo `/api/*` requieren el encabezado `x-api-key: your_key`.
+2. **JWT (JSON Web Token)**: Las rutas protegidas requieren un token Bearer en el encabezado `Authorization`.
+3. **Bcrypt**: Las contraseñas de los usuarios nunca se almacenan en texto plano.
+
+### Endpoints de Autenticación
+
+- `POST /api/auth/register`: Registro de nuevos usuarios.
+- `POST /api/auth/login`: Autenticación y obtención del token JWT.
+- `GET /api/auth/me`: Verificación del perfil del usuario autenticado (requiere JWT).
+
+## Documentación de la API (Swagger)
+
+Una vez iniciado el servidor, puedes acceder a la documentación interactiva en:
+`http://localhost:3000/api-docs`
 
 ## Arquitectura del Proyecto
 
