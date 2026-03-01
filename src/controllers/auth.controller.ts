@@ -1,0 +1,156 @@
+import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import prisma from '../config/prisma';
+import { LoginDTO, RegisterDTO, AuthRequest } from '../types';
+
+const JWT_SECRET = process.env.JWT_SECRET as string;
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
+
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterInput'
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *       400:
+ *         description: Username or email already taken
+ *       500:
+ *         description: Internal server error
+ */
+export const register = async (req: Request<{}, {}, RegisterDTO>, res: Response): Promise<void> => {
+  try {
+    const { username, email, password, name } = req.body;
+
+    if (!username || !email || !password) {
+      res.status(400).json({ error: 'username, email and password are required' });
+      return;
+    }
+
+    const existing = await prisma.user.findFirst({
+      where: { OR: [{ username }, { email }] }
+    });
+
+    if (existing) {
+      res.status(400).json({ error: 'Username or email already taken' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: { username, email, password: hashedPassword, name },
+      select: { id: true, username: true, email: true, name: true, status: true, createdAt: true }
+    });
+
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+    res.status(201).json({ user, token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error registering user' });
+  }
+};
+
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login with credentials
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginInput'
+ *     responses:
+ *       200:
+ *         description: Login successful, returns JWT token
+ *       400:
+ *         description: Missing credentials
+ *       401:
+ *         description: Invalid credentials
+ *       500:
+ *         description: Internal server error
+ */
+export const login = async (req: Request<{}, {}, LoginDTO>, res: Response): Promise<void> => {
+  try {
+    const { login: loginField, password } = req.body;
+
+    if (!loginField || !password) {
+      res.status(400).json({ error: 'login (email or username) and password are required' });
+      return;
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: loginField }, { username: loginField }],
+        status: 'ACTIVE'
+      }
+    });
+
+    if (!user) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+    const { password: _, ...safeUser } = user;
+    res.json({ user: safeUser, token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error during login' });
+  }
+};
+
+/**
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     summary: Get the current authenticated user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user data
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
+export const me = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { id: true, username: true, email: true, name: true, status: true, createdAt: true, updatedAt: true }
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching profile' });
+  }
+};

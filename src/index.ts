@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
+import authRoutes from './routes/auth.routes';
 import { setupSwagger } from './config/swagger';
 import { validateApiKey } from './middlewares';
 
@@ -26,6 +27,10 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
+// Public auth routes (no API key required)
+app.use('/api/auth', authRoutes);
+
+// Protected routes (API key required)
 app.use('/api', validateApiKey, routes);
 
 setupSwagger(app);
