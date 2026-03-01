@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx src/database/seeds/index.ts",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "generate:secret": "tsx scripts/generate-secret.ts"
   },
   "keywords": [],
   "author": "",
