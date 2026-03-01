@@ -4,8 +4,8 @@ API REST desarrollada con Node.js, Express, Prisma ORM, PostgreSQL y TypeScript.
 
 ## Requisitos Previos
 
-- Docker Engine 24.x o superior
-- Docker Compose v2.x o superior
+- Docker Engine 29.x o superior
+- Docker Compose v5.x o superior
 - Node.js 20.x o superior (solo para desarrollo local sin Docker)
 
 ## Stack Tecnológico
@@ -19,7 +19,8 @@ API REST desarrollada con Node.js, Express, Prisma ORM, PostgreSQL y TypeScript.
 | PostgreSQL | 18.2 | Base de datos relacional |
 | JWT | jsonwebtoken | Autenticación basada en tokens |
 | Bcrypt | bcryptjs | Hasheo de contraseñas |
-| Docker | - | Containerización |
+| Docker | 29.2.1 | Containerización |
+| Docker Compose | 5.0.2 | Orquestación de contenedores |
 
 ## Configuración del Entorno de Desarrollo
 
