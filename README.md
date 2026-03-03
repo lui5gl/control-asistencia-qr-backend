@@ -10,17 +10,17 @@ API REST desarrollada con Node.js, Express, Prisma ORM, PostgreSQL y TypeScript.
 
 ## Stack Tecnológico
 
-| Tecnología | Versión | Descripción |
-|------------|---------|-------------|
-| Node.js | 22.22.0 | Runtime de JavaScript |
-| TypeScript | 5.9.3 | Superset tipado de JavaScript |
-| Express | 5.2.1 | Framework web para Node.js |
-| Prisma | 7.4.0 | ORM para PostgreSQL |
-| PostgreSQL | 18.2 | Base de datos relacional |
-| JWT | jsonwebtoken | Autenticación basada en tokens |
-| Bcrypt | bcryptjs | Hasheo de contraseñas |
-| Docker | 29.2.1 | Containerización |
-| Docker Compose | 5.0.2 | Orquestación de contenedores |
+| Tecnología     | Versión      | Descripción                    |
+| -------------- | ------------ | ------------------------------ |
+| Node.js        | 22.22.0      | Runtime de JavaScript          |
+| TypeScript     | 5.9.3        | Superset tipado de JavaScript  |
+| Express        | 5.2.1        | Framework web para Node.js     |
+| Prisma         | 7.4.0        | ORM para PostgreSQL            |
+| PostgreSQL     | 18.2         | Base de datos relacional       |
+| JWT            | jsonwebtoken | Autenticación basada en tokens |
+| Bcrypt         | bcryptjs     | Hasheo de contraseñas          |
+| Docker         | 29.2.1       | Containerización               |
+| Docker Compose | 5.0.2        | Orquestación de contenedores   |
 
 ## Configuración del Entorno de Desarrollo
 
@@ -63,6 +63,7 @@ DATABASE_URL="postgresql://<tu_usuario>:<tu_password>@db:5432/<tu_database>?sche
 ```
 
 ### 3. Generar Secretos de Autenticación
+
 Es necesario generar un secreto seguro para firmar los tokens JWT:
 
 ```bash
@@ -76,6 +77,7 @@ docker-compose up -d
 ```
 
 Este comando iniciará dos contenedores:
+
 - **db**: Servidor PostgreSQL
 - **backend**: Aplicación Node.js con hot-reload habilitado
 
@@ -159,15 +161,15 @@ backend/
 ### Ejemplo de Controlador
 
 ```typescript
-import { Request, Response } from 'express';
-import prisma from '../config/prisma';
+import { Request, Response } from "express";
+import prisma from "../config/prisma";
 
 export const getAll = async (req: Request, res: Response): Promise<void> => {
   try {
     const users = await prisma.user.findMany();
     res.json(users);
   } catch (error) {
-    res.status(500).json({ error: 'Error message' });
+    res.status(500).json({ error: "Error message" });
   }
 };
 ```
@@ -175,16 +177,16 @@ export const getAll = async (req: Request, res: Response): Promise<void> => {
 ### Ejemplo de Ruta
 
 ```typescript
-import { Router } from 'express';
-import * as controller from '../controllers/resource.controller';
+import { Router } from "express";
+import * as controller from "../controllers/resource.controller";
 
 const router = Router();
 
-router.get('/', controller.getAll);
-router.get('/:id', controller.getById);
-router.post('/', controller.create);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.delete);
+router.get("/", controller.getAll);
+router.get("/:id", controller.getById);
+router.post("/", controller.create);
+router.put("/:id", controller.update);
+router.delete("/:id", controller.delete);
 
 export default router;
 ```
@@ -203,21 +205,21 @@ Desde esta interfaz podrás inspeccionar todos los endpoints disponibles, ver qu
 
 ### Endpoints Generales
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/` | Información de la API |
-| GET | `/health` | Estado del servidor |
-| GET | `/api` | Versión de la API |
+| Método | Endpoint  | Descripción           |
+| ------ | --------- | --------------------- |
+| GET    | `/`       | Información de la API |
+| GET    | `/health` | Estado del servidor   |
+| GET    | `/api`    | Versión de la API     |
 
 ### Recurso Users
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/users` | Listar todos los usuarios |
-| GET | `/api/users/:id` | Obtener usuario por ID |
-| POST | `/api/users` | Crear nuevo usuario |
-| PUT | `/api/users/:id` | Actualizar usuario |
-| DELETE | `/api/users/:id` | Eliminar usuario |
+| Método | Endpoint         | Descripción               |
+| ------ | ---------------- | ------------------------- |
+| GET    | `/api/users`     | Listar todos los usuarios |
+| GET    | `/api/users/:id` | Obtener usuario por ID    |
+| POST   | `/api/users`     | Crear nuevo usuario       |
+| PUT    | `/api/users/:id` | Actualizar usuario        |
+| DELETE | `/api/users/:id` | Eliminar usuario          |
 
 #### Esquema User
 
@@ -273,15 +275,15 @@ npm start                   # Ejecutar en producción
 
 ## Variables de Entorno
 
-| Variable | Requerido | Descripción |
-|----------|-----------|-------------|
-| `POSTGRES_USER` | Sí | Usuario de PostgreSQL |
-| `POSTGRES_PASSWORD` | Sí | Contraseña de PostgreSQL |
-| `POSTGRES_DB` | Sí | Nombre de la base de datos |
-| `POSTGRES_PORT` | No | Puerto de PostgreSQL (default: 5432) |
-| `BACKEND_PORT` | No | Puerto del servidor (default: 3000) |
-| `NODE_ENV` | No | Ambiente: `development` o `production` |
-| `DATABASE_URL` | Sí | URL de conexión para Prisma |
+| Variable            | Requerido | Descripción                            |
+| ------------------- | --------- | -------------------------------------- |
+| `POSTGRES_USER`     | Sí        | Usuario de PostgreSQL                  |
+| `POSTGRES_PASSWORD` | Sí        | Contraseña de PostgreSQL               |
+| `POSTGRES_DB`       | Sí        | Nombre de la base de datos             |
+| `POSTGRES_PORT`     | No        | Puerto de PostgreSQL (default: 5432)   |
+| `BACKEND_PORT`      | No        | Puerto del servidor (default: 3000)    |
+| `NODE_ENV`          | No        | Ambiente: `development` o `production` |
+| `DATABASE_URL`      | Sí        | URL de conexión para Prisma            |
 
 ## Hot Reload
 
