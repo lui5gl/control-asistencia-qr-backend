@@ -52,6 +52,11 @@ export const register = async (req: Request<{}, {}, RegisterDTO>, res: Response)
       select: { id: true, username: true, email: true, name: true, status: true, createdAt: true }
     });
 
+    // Auto-create student profile for every new user
+    await prisma.studentProfile.create({
+      data: { studentId: user.id, points: 0, level: 'BRONZE' }
+    });
+
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
     res.status(201).json({ user, token });
