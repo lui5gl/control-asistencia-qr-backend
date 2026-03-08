@@ -154,3 +154,52 @@ export const me = async (req: AuthRequest, res: Response): Promise<void> => {
     res.status(500).json({ error: 'Error fetching profile' });
   }
 };
+
+export const myProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const profile = await prisma.studentProfile.findUnique({
+      where: { studentId: req.userId },
+      include: {
+        pointsHistory: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+      },
+    });
+
+    if (!profile) {
+      res.status(404).json({ error: 'Student profile not found' });
+      return;
+    }
+
+    const levelThresholds: Record<string, { next: string; max: number; min: number }> = {
+      BRONZE:  { next: 'SILVER',  min: 0,   max: 100 },
+      SILVER:  { next: 'GOLD',    min: 100,  max: 300 },
+      GOLD:    { next: 'DIAMOND', min: 300,  max: 600 },
+      DIAMOND: { next: 'DIAMOND', min: 600,  max: 600 },
+    };
+
+    const threshold = levelThresholds[profile.level];
+    const progress = profile.level === 'DIAMOND'
+      ? 100
+      : Math.min(100, Math.round(((profile.points - threshold.min) / (threshold.max - threshold.min)) * 100));
+    const pointsToNext = Math.max(0, threshold.max - profile.points);
+
+    res.json({
+      points: profile.points,
+      level: profile.level,
+      progress,
+      pointsToNext,
+      nextLevel: threshold.next,
+      history: profile.pointsHistory.map(m => ({
+        id: m.id,
+        reason: m.reason,
+        points: m.points > 0 ? `+${m.points}` : `${m.points}`,
+        date: m.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching student profile' });
+  }
+};
