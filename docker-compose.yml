@@ -23,6 +23,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: development
     image: backend-app:latest
     ports:
       - "${BACKEND_PORT:-3000}:3000"
