@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import routes from './routes';
 import authRoutes from './routes/auth.routes';
 import { setupSwagger } from './config/swagger';
-import { validateApiKey } from './middlewares';
+import { authenticateToken } from './middlewares';
 
 dotenv.config({ path: '.env', override: true });
 
@@ -30,8 +30,8 @@ app.get('/health', (req: Request, res: Response) => {
 // Public auth routes (no API key required)
 app.use('/api/auth', authRoutes);
 
-// Protected routes (API key required)
-app.use('/api', validateApiKey, routes);
+// Protected routes (JWT required)
+app.use('/api', authenticateToken, routes);
 
 setupSwagger(app);
 

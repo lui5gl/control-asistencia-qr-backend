@@ -5,7 +5,7 @@ import { AuthRequest, JwtPayload } from '../types';
 export const validateApiKey = (req: Request, res: Response, next: NextFunction): void => {
   const apiKey = req.headers['x-api-key'];
 
-  if (!apiKey || apiKey !== process.env.API_KEY) {
+  if (!apiKey || apiKey !== process.env.OPENAI_API_KEY) {
     res.status(401).json({ error: 'Invalid or missing API Key' });
     return;
   }
