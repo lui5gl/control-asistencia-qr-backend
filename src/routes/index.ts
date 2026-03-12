@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import userRoutes from './user.routes';
+import anaRoutes from "./ana.routes";
 
 const router = Router();
 
@@ -11,5 +12,6 @@ router.get('/', (req: Request, res: Response) => {
 });
 
 router.use('/users', userRoutes);
+router.use("/ana", anaRoutes);
 
 export default router;
