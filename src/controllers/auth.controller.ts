@@ -196,7 +196,7 @@ export const myProfile = async (req: AuthRequest, res: Response): Promise<void> 
       progress,
       pointsToNext,
       nextLevel: threshold.next,
-      history: profile.pointsHistory.map(m => ({
+      history: profile.pointsHistory.map((m: any) => ({
         id: m.id,
         reason: m.reason,
         points: m.points > 0 ? `+${m.points}` : `${m.points}`,
@@ -206,5 +206,84 @@ export const myProfile = async (req: AuthRequest, res: Response): Promise<void> 
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error fetching student profile' });
+  }
+};
+
+const weekdayMap = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const;
+
+export const myAttendanceSummary = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const [present, late, absent, left] = await Promise.all([
+      prisma.attendanceRecord.count({ where: { studentId: req.userId, status: 'PRESENT' } }),
+      prisma.attendanceRecord.count({ where: { studentId: req.userId, status: 'LATE' } }),
+      prisma.attendanceRecord.count({ where: { studentId: req.userId, status: 'ABSENT' } }),
+      prisma.attendanceRecord.count({ where: { studentId: req.userId, status: 'LEFT' } }),
+    ]);
+
+    res.json({
+      present,
+      late,
+      pending: absent + left,
+      total: present + late + absent + left,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching attendance summary' });
+  }
+};
+
+export const myRecentAttendances = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const limit = Math.min(Number(req.query.limit) || 10, 20);
+
+    const records = await prisma.attendanceRecord.findMany({
+      where: { studentId: req.userId },
+      orderBy: { recordedAt: 'desc' },
+      take: limit,
+      include: {
+        session: {
+          include: {
+            section: {
+              include: {
+                course: true,
+                schedules: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const items = records.map((record: any) => {
+      const sessionDate = new Date(record.session.date);
+      const weekday = weekdayMap[sessionDate.getDay()];
+      const matchedSchedule = record.session.section.schedules.find((s: any) => s.weekday === weekday);
+
+      return {
+        id: record.id,
+        status: record.status,
+        className: record.session.section.course.name,
+        sectionName: record.session.section.name,
+        classroom: matchedSchedule?.classroom || null,
+        date: record.session.date,
+        startTime: record.session.startTime,
+        recordedAt: record.recordedAt,
+      };
+    });
+
+    res.json({ items });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching recent attendances' });
   }
 };

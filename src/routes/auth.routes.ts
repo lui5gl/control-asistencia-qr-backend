@@ -62,5 +62,7 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.get('/me', authenticateToken, authController.me);
 router.get('/me/profile', authenticateToken, authController.myProfile);
+router.get('/me/attendance/summary', authenticateToken, authController.myAttendanceSummary);
+router.get('/me/attendance/recent', authenticateToken, authController.myRecentAttendances);
 
 export default router;
