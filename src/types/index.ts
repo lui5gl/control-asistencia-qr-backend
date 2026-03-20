@@ -37,3 +37,9 @@ export interface RegisterDTO {
 export interface JwtPayload {
   userId: number;
 }
+
+export interface MarkAttendanceDTO {
+  token: string;
+  photoUrl: string;
+  status?: 'PRESENT' | 'LATE' | 'LEFT';
+}
