@@ -43,3 +43,7 @@ export interface MarkAttendanceDTO {
   photoUrl: string;
   status?: 'PRESENT' | 'LATE' | 'LEFT';
 }
+
+export interface GenerateQRDTO {
+  sessionId: number;
+}

@@ -1,6 +1,7 @@
 import { Response } from 'express';
+import crypto from 'crypto';
 import prisma from '../config/prisma';
-import { AuthRequest, MarkAttendanceDTO } from '../types';
+import { AuthRequest, MarkAttendanceDTO, GenerateQRDTO } from '../types';
 
 export const markAttendanceByQR = async (
   req: AuthRequest,
@@ -99,5 +100,78 @@ export const markAttendanceByQR = async (
 
     console.error(error);
     res.status(500).json({ error: 'Error registering attendance' });
+  }
+};
+
+export const generateQRToken = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const teacherId = req.userId;
+    const { sessionId } = req.body as GenerateQRDTO;
+
+    if (!teacherId) {
+      res.status(401).json({ error: 'Unauthorized user' });
+      return;
+    }
+
+    if (!sessionId) {
+      res.status(400).json({ error: 'sessionId is required' });
+      return;
+    }
+
+    const session = await prisma.classSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) {
+      res.status(404).json({ error: 'Class session not found' });
+      return;
+    }
+
+    if (session.teacherId !== teacherId) {
+      res.status(403).json({ error: 'You are not the teacher of this session' });
+      return;
+    }
+
+    if (session.status !== 'ACTIVE') {
+      res.status(400).json({ error: 'Class session is not active' });
+      return;
+    }
+
+    // Expire any existing active QR tokens for this session
+    await prisma.qRToken.updateMany({
+      where: {
+        sessionId: session.id,
+        status: 'ACTIVE',
+      },
+      data: {
+        status: 'EXPIRED',
+      },
+    });
+
+    const tokenValue = crypto.randomBytes(16).toString('hex');
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    const qrToken = await prisma.qRToken.create({
+      data: {
+        token: tokenValue,
+        sessionId: session.id,
+        status: 'ACTIVE',
+        expiresAt,
+      },
+      select: {
+        id: true,
+        token: true,
+        expiresAt: true,
+        status: true,
+      },
+    });
+
+    res.status(201).json({ message: 'QR token generated successfully', qrToken });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error generating QR token' });
   }
 };
