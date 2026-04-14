@@ -30,7 +30,9 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      DATABASE_URL: ${DATABASE_URL}
+      DIRECT_URL: ${DIRECT_URL}
+      JWT_SECRET: ${JWT_SECRET}
     volumes:
       - ./src:/app/src
       - ./tsconfig.json:/app/tsconfig.json
@@ -39,9 +41,6 @@ services:
       - /app/dist
     networks:
       - app_network
-    depends_on:
-      db:
-        condition: service_healthy
     command: npm run dev
 
 volumes:
