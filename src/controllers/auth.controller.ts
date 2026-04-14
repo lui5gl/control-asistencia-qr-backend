@@ -6,6 +6,7 @@ import { LoginDTO, RegisterDTO, AuthRequest } from '../types';
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * @swagger
@@ -90,38 +91,89 @@ export const register = async (req: Request<{}, {}, RegisterDTO>, res: Response)
  */
 export const login = async (req: Request<{}, {}, LoginDTO>, res: Response): Promise<void> => {
   try {
-    const { login: loginField, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!loginField || !password) {
-      res.status(400).json({ error: 'login (email or username) and password are required' });
+    if (!email || !password) {
+      res.status(400).json({
+        success: false,
+        message: 'email and password are required',
+      });
       return;
     }
 
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [{ email: loginField }, { username: loginField }],
-        status: 'ACTIVE'
-      }
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid email format',
+      });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      include: {
+        userRoles: {
+          where: { deletedAt: null },
+          include: {
+            role: {
+              select: { name: true },
+            },
+          },
+          take: 1,
+          orderBy: { id: 'asc' },
+        },
+      },
     });
 
     if (!user) {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({
+        success: false,
+        message: 'Invalid email or password',
+      });
+      return;
+    }
+
+    if (user.status !== 'ACTIVE') {
+      res.status(403).json({
+        success: false,
+        message: 'Account is inactive',
+      });
       return;
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({
+        success: false,
+        message: 'Invalid email or password',
+      });
       return;
     }
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const role = user.userRoles[0]?.role.name ?? null;
+    const tokenPayload = role ? { userId: user.id, role } : { userId: user.id };
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
-    const { password: _, ...safeUser } = user;
-    res.json({ user: safeUser, token });
+    const { password: _, userRoles, ...safeUser } = user;
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        token,
+        user: {
+          ...safeUser,
+          role,
+        },
+      },
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error during login' });
+    res.status(500).json({
+      success: false,
+      message: 'Error during login',
+    });
   }
 };
 
