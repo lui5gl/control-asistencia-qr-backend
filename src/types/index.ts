@@ -23,7 +23,7 @@ export interface AuthRequest extends Request {
 }
 
 export interface LoginDTO {
-  login: string;
+  email: string;
   password: string;
 }
 
@@ -36,6 +36,7 @@ export interface RegisterDTO {
 
 export interface JwtPayload {
   userId: number;
+  role?: string;
 }
 
 export interface MarkAttendanceDTO {

@@ -33,22 +33,35 @@ const router = Router();
  *     LoginInput:
  *       type: object
  *       required:
- *         - login
+ *         - email
  *         - password
  *       properties:
- *         login:
+ *         email:
  *           type: string
- *           description: Email or username
+ *           format: email
+ *           description: User email
  *         password:
  *           type: string
  *           format: password
  *     AuthResponse:
  *       type: object
  *       properties:
- *         user:
- *           $ref: '#/components/schemas/User'
- *         token:
+ *         success:
+ *           type: boolean
+ *         message:
  *           type: string
+ *         data:
+ *           type: object
+ *           properties:
+ *             token:
+ *               type: string
+ *             user:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/User'
+ *                 - type: object
+ *                   properties:
+ *                     role:
+ *                       type: string
  */
 
 /**
