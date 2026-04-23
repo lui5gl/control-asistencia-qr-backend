@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import crypto from 'crypto';
 import prisma from '../config/prisma';
-import { AuthRequest, MarkAttendanceDTO, GenerateQRDTO } from '../types';
+import { AuthRequest, MarkAttendanceDTO, GenerateQRDTO, CreateClassSessionDTO } from '../types';
 
 export const markAttendanceByQR = async (
   req: AuthRequest,
@@ -173,5 +173,153 @@ export const generateQRToken = async (
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error generating QR token' });
+  }
+};
+
+export const createClassSession = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const teacherId = req.userId;
+    const { sectionId, date, startTime, endTime } = req.body as CreateClassSessionDTO;
+
+    if (!teacherId) {
+      res.status(401).json({ error: 'Unauthorized user' });
+      return;
+    }
+
+    if (!sectionId || !date || !startTime) {
+      res.status(400).json({ error: 'sectionId, date, and startTime are required' });
+      return;
+    }
+
+    // Verify section exists
+    const section = await prisma.section.findUnique({
+      where: { id: sectionId },
+    });
+
+    if (!section) {
+      res.status(404).json({ error: 'Section not found' });
+      return;
+    }
+
+    // Verify teacher is assigned to this section
+    const assignment = await prisma.teacherAssignment.findFirst({
+      where: {
+        sectionId,
+        teacherId,
+      },
+    });
+
+    if (!assignment) {
+      res.status(403).json({ error: 'You are not assigned to this section' });
+      return;
+    }
+
+    const classSession = await prisma.classSession.create({
+      data: {
+        sectionId,
+        teacherId,
+        date: new Date(date),
+        startTime: new Date(`1970-01-01T${startTime}`),
+        endTime: endTime ? new Date(`1970-01-01T${endTime}`) : null,
+        status: 'ACTIVE',
+      },
+      include: {
+        section: {
+          select: {
+            id: true,
+            name: true,
+            course: {
+              select: { name: true, code: true },
+            },
+          },
+        },
+      },
+    });
+
+    res.status(201).json({
+      message: 'Class session created successfully',
+      classSession,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error creating class session' });
+  }
+};
+
+export const getClassSessions = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const teacherId = req.userId;
+    const { sectionId, date } = req.query;
+
+    const where: any = { teacherId };
+    if (sectionId) where.sectionId = Number(sectionId);
+    if (date) where.date = new Date(date as string);
+
+    const sessions = await prisma.classSession.findMany({
+      where,
+      include: {
+        section: {
+          select: {
+            id: true,
+            name: true,
+            course: { select: { name: true, code: true } },
+          },
+        },
+        qrTokens: {
+          where: { status: 'ACTIVE' },
+          select: { token: true, expiresAt: true },
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    res.json({ sessions });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching class sessions' });
+  }
+};
+
+export const closeClassSession = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const teacherId = req.userId;
+    const { id } = req.params;
+
+    const session = await prisma.classSession.findUnique({ where: { id: Number(id) } });
+
+    if (!session) {
+      res.status(404).json({ error: 'Class session not found' });
+      return;
+    }
+
+    if (session.teacherId !== teacherId) {
+      res.status(403).json({ error: 'You are not the teacher of this session' });
+      return;
+    }
+
+    // Expire active QR tokens
+    await prisma.qRToken.updateMany({
+      where: { sessionId: session.id, status: 'ACTIVE' },
+      data: { status: 'EXPIRED' },
+    });
+
+    const updated = await prisma.classSession.update({
+      where: { id: session.id },
+      data: { status: 'CLOSED', endTime: new Date() },
+    });
+
+    res.json({ message: 'Class session closed', session: updated });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error closing class session' });
   }
 };

@@ -48,3 +48,10 @@ export interface MarkAttendanceDTO {
 export interface GenerateQRDTO {
   sessionId: number;
 }
+
+export interface CreateClassSessionDTO {
+  sectionId: number;
+  date: string;
+  startTime: string;
+  endTime?: string;
+}
