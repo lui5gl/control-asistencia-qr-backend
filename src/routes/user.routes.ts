@@ -1,7 +1,35 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import * as userController from '../controllers/user.controller';
+import { authenticateToken } from '../middlewares';
+import prisma from '../config/prisma';
 
 const router = Router();
+
+// GET /api/users/me/sections - Get sections assigned to the authenticated teacher
+router.get('/me/sections', authenticateToken, async (req: any, res: Response) => {
+  try {
+    const teacherId = req.userId;
+    const assignments = await prisma.teacherAssignment.findMany({
+      where: { teacherId },
+      include: {
+        section: {
+          include: {
+            course: { select: { id: true, name: true, code: true } },
+          },
+        },
+      },
+    });
+    const sections = assignments.map(a => ({
+      id: a.section.id,
+      name: a.section.name,
+      course: a.section.course,
+    }));
+    res.json(sections);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching teacher sections' });
+  }
+});
 
 /**
  * @swagger
